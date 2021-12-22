@@ -2,18 +2,20 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 
-from widgets.widgets import LineEdit, Button, TopFrame
+from widgets.widgets import Label, LineEdit, Button, TopFrame, RadioButton
+from widgets.video_frame import VideoFrame
+
 from classes.downloader import Downloader
 from constants import *
 
 class MainWindow(QMainWindow):
     def __init__(
         self,
-        width: int=600,
-        height: int=300,
+        width: int=620,
+        height: int=430,
         title: str='Main Window',
         icon: str=None,
-        background_color: str='#FFFFFF',
+        background_color: str='#FAFAFA',
         border_radius: int=None
     ):
         QMainWindow.__init__(self)
@@ -23,90 +25,87 @@ class MainWindow(QMainWindow):
         q_icon = QIcon(icon)
         self.setWindowIcon(q_icon)
 
-        # self.setWindowFlag(Qt.FramelessWindowHint)
-        # self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setWindowFlag(Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
 
         # Setting attributes
+        self.mode = 'v'
+
         self.title = title
         self.icon = icon
         self.background_color = background_color
         self.border_radius = border_radius
 
+        self.main_frame = QFrame(self)
+        self.main_frame.setFixedSize(self.size())
+
         self.setStyleSheet(f'background-color: {self.background_color}; border-radius: {self.border_radius}px')
 
-        # Setting central widget
-        self.central_widget = QWidget(self)
-        self.central_widget.setObjectName('central_widget')
+        # TopFrame
+        self.top_frame = TopFrame(
+            parent=self.main_frame,
+            width=self.width(),
+            background_color=TOP_FRAME_BACKGROUND,
+            border_radius=self.border_radius
+        )
+        self.top_frame.setGeometry(0, 0, self.top_frame.width(), self.top_frame.height())
 
-        self.central_layout = QVBoxLayout(self.central_widget)
-        self.central_layout.setSpacing(0)
-        self.central_layout.setContentsMargins(0, 0, 0, 0)
-        self.central_layout.setObjectName('central_layout')
+        # Container
+        self.container = QFrame(self.main_frame)
+        self.container.setGeometry(0, 30, self.width(), self.height()-30)
 
-        # Top frame
-        # self.top_container = QFrame(self.central_widget)
-        # self.top_container.setObjectName('top_container')
+        # Label
+        self.icon_label = Label(
+            parent=self.container,
+            pixmap_path=ICON_SMALL
+        )
+        rect = self.get_central_pos(self.icon_label, y=10)
+        self.icon_label.setGeometry(rect)
 
-        # self.top_layout = QVBoxLayout(self.top_container)
-        # self.top_layout.setSpacing(0)
-        # self.top_layout.setContentsMargins(0, 0, 0, 0)
-        # self.top_layout.setObjectName('top_layout')
+        # LineEdit
+        self.url_edit = LineEdit(
+            parent=self.container,
+            width=470,
+            placeholder_text='Enter the URL of the youtube video',
+            border=True,
+            border_radius=0
+        )
+        rect = self.get_central_pos(self.url_edit, y=220)
+        self.url_edit.setGeometry(rect)
+        self.url_edit.setFocus()
 
-        # self.top_frame = TopFrame(parent=self.central_widget, width=self.width())
-        # self.top_frame.setObjectName('top_frame')
+        # RadioButtons
+        self.video_button = RadioButton(
+            parent=self.container,
+            input_text='Video',
+            outer_circle_color=TEXT_COLOR,
+            hover_color=HOVER_COLOR
+        )
+        rect = self.get_central_pos(self.video_button, y=280)
+        self.video_button.setGeometry(rect)
+        self.video_button.toggled.connect(self.__video)
+        self.video_button.toggle()
 
-        # self.top_layout.addWidget(self.top_frame, Qt.AlignTop, Qt.AlignCenter)
+        self.audio_button = RadioButton(
+            parent=self.container,
+            input_text='Audio',
+            outer_circle_color=TEXT_COLOR,
+            hover_color=HOVER_COLOR
+        )
+        rect = self.get_central_pos(self.audio_button, y=310)
+        self.audio_button.setGeometry(rect)
+        self.audio_button.toggled.connect(self.__audio)
 
-        # self.central_layout.addWidget(self.top_frame, Qt.AlignTop, Qt.AlignCenter)
-
-        # Setting main frame
-        self.main_frame = QFrame(self.central_widget)
-        self.main_frame.setObjectName('main_frame')
-
-        self.main_layout = QVBoxLayout(self.main_frame)
-        self.main_layout.setSpacing(0)
-        self.main_layout.setContentsMargins(0, 0, 0, 0)
-        self.main_layout.setObjectName('main_layout')
-
-        # Inserting icon to main frame
-        self.icon_frame = QFrame(self.main_frame)
-        self.icon_frame.setFixedHeight(270)
-        self.icon_frame.setObjectName('icon_frame')
-
-        self.icon_layout = QVBoxLayout(self.icon_frame)
-        self.icon_layout.setSpacing(0)
-        self.icon_layout.setContentsMargins(0, 0, 0, 0)
-        self.icon_layout.setObjectName('icon_layout')
-
-        self.icon_label = QLabel(self.icon_frame)
-        pixmap = QPixmap(ICON_SMALL)
-        self.icon_label.setPixmap(pixmap)
-        self.icon_label.setAlignment(Qt.AlignTop)
-        self.icon_label.setObjectName('icon_label')
-
-        self.icon_layout.addWidget(self.icon_label, Qt.AlignTop, Qt.AlignCenter)
-        
-        self.main_layout.addWidget(self.icon_frame, Qt.AlignCenter, Qt.AlignCenter)
-
-        # Inserting LineEdit and Button
-        self.url_frame = QFrame(self.main_frame)
-        self.url_frame.setFixedHeight(200)
-        self.url_frame.setObjectName('url_frame')
-
-        self.url_edit = LineEdit(parent=self.url_frame, border=True, border_radius=20, placeholder_text='Enter URL of the youtube video')
-        self.url_edit.setGeometry(self.get_central_pos(self.url_edit, y=90))
-        self.url_edit.setObjectName('url_edit')
-
-        self.search_button = Button(parent=self.url_frame, height=34, border=True, border_radius=0, font_size=12, button_text='Search')
-        self.search_button.setGeometry(self.get_central_pos(self.search_button, y=150))
-        self.search_button.setObjectName('search_button')
-
-        ###
-        self.main_layout.addWidget(self.url_frame)
-
-        self.central_layout.addWidget(self.main_frame)
-
-        self.setCentralWidget(self.central_widget)
+        # Button
+        self.donwload_button = Button(
+            parent=self.container,
+            border=True,
+            border_radius=0,
+            input_text='Download'
+        )
+        rect = self.get_central_pos(self.donwload_button, y=350)
+        self.donwload_button.setGeometry(rect)
+        self.donwload_button.clicked.connect(self.download)
 
         self.show()
 
@@ -122,6 +121,22 @@ class MainWindow(QMainWindow):
             y = (h_m - h)/2
         return QRect(x, y, w, h)
 
-    def search(self):
+    def __video(self):
+        self.mode = 'v'
+
+    def __audio(self):
+        self.mode = 'a'
+
+    def download(self):
+        self.container.hide()
+
         url = self.url_edit.text()
         d = Downloader(url)
+
+        v = VideoFrame(d, parent=self)
+        v.setGeometry(0, 30, v.width(), v.height())
+        # v.show()
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.key() == Qt.Key_Return:
+            self.download()

@@ -5,6 +5,32 @@ from PySide6.QtWidgets import *
 from classes.errors import IrrelevantArgumentError
 from constants import *
 
+class Label(QLabel):
+    def __init__(
+        self,
+        parent: QWidget=None,
+        width: int=192,
+        height: int=192,
+        input_text: str=None,
+        alignment: Qt.AlignmentFlag=Qt.AlignCenter,
+        pixmap_path: str=None,
+        font_family: str='Segoe UI',
+        font_size: int=12
+    ):
+        QLabel.__init__(self)
+        self.setParent(parent)
+        self.setFixedSize(width, height)
+
+        self.setText(input_text)
+
+        pixmap = QPixmap(pixmap_path)
+        self.setPixmap(pixmap)
+
+        self.setAlignment(alignment)
+
+        font = QFont(font_family, font_size)
+        self.setFont(font)
+
 class LineEdit(QLineEdit):
     def __init__(
         self,
@@ -14,17 +40,18 @@ class LineEdit(QLineEdit):
         background_color: str=BACKGROUND_COLOR,
         text_color: str=TEXT_COLOR,
         placeholder_text: str=None,
+        input_text: str=None,
         border: bool=False,
         border_color: str=None,
-        border_width: int=0,
+        border_width: int=None,
         border_radius: int=None,
         font_family: str='Segoe UI',
         font_size: int=15
     ):
-        if not border and border_color:
+        if not border and border_color is not None:
             raise IrrelevantArgumentError('border', 'border_color', border)
 
-        if not border and border_width:
+        if not border and border_width is not None:
             raise IrrelevantArgumentError('border', 'border_width', border)
 
         QLineEdit.__init__(self)
@@ -35,6 +62,7 @@ class LineEdit(QLineEdit):
         self.background_color = background_color
         self.text_color = text_color
         self.placeholder_text = placeholder_text
+        self.input_text = input_text
         self.border = border
         self.border_color = border_color
         self.border_width = border_width
@@ -50,6 +78,7 @@ class LineEdit(QLineEdit):
         font = QFont(self.font_family, self.font_size)
         self.setFont(font)
         self.setPlaceholderText(self.placeholder_text)
+        self.setText(self.input_text)
         
     def set_stylesheet(self):
         qss = f'''
@@ -87,32 +116,34 @@ class Button(QPushButton):
     def __init__(
         self,
         parent: QWidget=None,
+        cursor: Qt.CursorShape=Qt.PointingHandCursor,
         width: int=90,
         height: int=30,
-        button_text: str='Button',
+        input_text: str='Button',
         background_color: str=BACKGROUND_COLOR,
         hover_color: str=HOVER_COLOR,
         pressed_color: str=PRESSED_COLOR,
         text_color: str=TEXT_COLOR,
         border: bool=False,
         border_color: str=None,
-        border_width: int=0,
+        border_width: int=None,
         border_radius=None,
         font_family: str='Segoe UI',
-        font_size: int=10
+        font_size: int=12
     ):
-        if not border and border_color:
+        if not border and border_color is not None:
             raise IrrelevantArgumentError('border', 'border_color', border)
 
-        if not border and border_width:
+        if not border and border_width is not None:
             raise IrrelevantArgumentError('border', 'border_width', border)
 
         QPushButton.__init__(self)
         self.setParent(parent)
         self.setFixedSize(width, height)
+        self.setCursor(cursor)
 
         # Setting Attributes
-        self.button_text = button_text
+        self.input_text = input_text
         self.background_color = background_color
         self.hover_color = hover_color
         self.pressed_color = pressed_color
@@ -129,7 +160,7 @@ class Button(QPushButton):
         # Setting font and text
         font = QFont(self.font_family, self.font_size)
         self.setFont(font)
-        self.setText(self.button_text)
+        self.setText(self.input_text)
 
     def set_stylesheet(self):
         button_qss = f'''QPushButton{{
@@ -179,16 +210,19 @@ class TopFrame(QFrame):
         self,
         parent: QWidget=None,
         width: int=600,
-        height: int=30
+        height: int=30,
+        background_color: str=None,
+        border_radius: int=None
     ):
         QFrame.__init__(self)
         self.setParent(parent)
-        self.setFixedHeight(height)
-        self.setMinimumWidth(width)
-
-        # self.setStyleSheet('border: 2px solid black; background-color: red')
+        self.setFixedSize(width, height)
 
         self.pressing = False
+        self.background_color = background_color
+        self.border_radius = border_radius
+
+        self.setStyleSheet(f'border-radius: {self.border_radius}px; background-color: {self.background_color}')
 
         self.close_button = Button(
             parent=self,
@@ -197,12 +231,14 @@ class TopFrame(QFrame):
             background_color=CLOSE_BACKGROUND,
             hover_color=CLOSE_HOVER,
             pressed_color=CLOSE_PRESSED,
+            border=True,
+            border_color=CLOSE_PRESSED,
             border_radius=0,
-            button_text=''
+            input_text=''
         )
         self.close_button.setGeometry(
             self.width()-20,
-            (self.height()-self.close_button.height())/2,
+            (self.height()-self.close_button.height())//2,
             self.close_button.width(),
             self.close_button.height()
         )
@@ -215,12 +251,14 @@ class TopFrame(QFrame):
             background_color=MINIMIZE_BACKGROUND,
             hover_color=MINIMIZE_HOVER,
             pressed_color=MINIMIZE_PRESSED,
+            border=True,
+            border_color=MINIMIZE_PRESSED,
             border_radius=0,
-            button_text=''
+            input_text=''
         )
         self.minimize_button.setGeometry(
             self.close_button.x()-20,
-            (self.height()-self.minimize_button.height())/2,
+            (self.height()-self.minimize_button.height())//2,
             self.minimize_button.width(),
             self.minimize_button.height()
         )
@@ -250,14 +288,81 @@ class TopFrame(QFrame):
                 )
             self.start = self.end
 
-    # def paintEvent(self, event: QPaintEvent) -> None:
-    #     p = QPainter(self)
-    #     p.setPen(QColor('#000000'))
+class RadioButton(QRadioButton):
+    def __init__(
+        self,
+        parent: QWidget=None,
+        cursor: Qt.CursorShape=Qt.PointingHandCursor,
+        width: int=90,
+        height: int=20,
+        background_color: str=WHITE,
+        outer_circle_color: str=OUTER_CIRCLE_COLOR,
+        inner_circle_color: str=INNER_CIRCLE_COLOR,
+        hover_color: str=RADIOBUTTON_HOVER,
+        text_color: str=RADIOBUTTON_TEXT_COLOR,
+        input_text: str='Button',
+        font_family='Segoe UI',
+        font_size: int=12
+    ):
+        QRadioButton.__init__(self)
+        self.setParent(parent)
+        self.setCursor(cursor)
+        self.setFixedSize(width, height)
 
-    #     p.drawRect(self.rect())
+        self.hover = False
 
-    #     p.end()
+        self.background_color = background_color
+        self.outer_circle_color = outer_circle_color
+        self.inner_circle_color = inner_circle_color
+        self.hover_color = hover_color
+        self.text_color = text_color
+        self.input_text = input_text
+        self.font_family = font_family
+        self.font_size = font_size
 
-class DownloadPage(QFrame):
-    def __init__(self):
-        QFrame.__init__(self)
+        self.setStyleSheet(f'color: {self.text_color}')
+
+        font = QFont(self.font_family, self.font_size)
+        self.setFont(font)
+
+    def enterEvent(self, event: QEnterEvent) -> None:
+        self.hover = True
+
+    def leaveEvent(self, event: QEvent) -> None:
+        self.hover = False
+
+    def paintEvent(self, e: QPaintEvent) -> None:
+        h = self.height()
+        r = h-4
+
+        p = QPainter(self)
+        p.setRenderHints(QPainter.Antialiasing)
+
+        if self.hover:
+            brush = QBrush(self.hover_color)
+        else:
+            brush = QBrush(self.background_color)
+        p.setBrush(brush)
+        p.drawEllipse(6, 2, r, r)
+
+        p.setBrush(Qt.NoBrush)
+
+        pen = QPen(self.outer_circle_color)
+        pen.setWidth(2)
+        p.setPen(pen)
+        p.drawEllipse(6, 2, r, r)
+
+        if self.isChecked():
+            p.setPen(Qt.NoPen)
+            brush = QBrush(self.inner_circle_color)
+            p.setBrush(brush)
+            p.drawEllipse(r/2+2, r/2-2, r/2, r/2)
+            p.setBrush(Qt.NoBrush)
+
+        pen.setColor(self.text_color)
+        p.setPen(pen)
+        y = h-6
+        x = 2*r+10
+        p.drawText(x, y, self.input_text)
+
+        p.end()

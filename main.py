@@ -6,8 +6,9 @@ from widgets.main_window import MainWindow
 
 # TODO:
 #   Handle error for connection issues
+#   Fps
 
 if __name__ == '__main__':
     app = QApplication()
-    window = MainWindow(width=520, height=500, title='Youtube Downloader', icon='assets/icon.png')
+    window = MainWindow(title='Youtube Downloader', icon='assets/icon.png', border_radius=15)
     app.exec()
